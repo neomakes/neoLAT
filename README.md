@@ -8,7 +8,7 @@
   </p>
 </div>
 
-**neoLAT** is a specialized testbed designed for evaluating and experimenting with Local Agentic AI systems. It provides a robust environment for comparing performance across different local inference engines (MLX-based PyTorch, Ollama) and testing cognitive capabilities on tasks like Sudoku, ARC-1, and ARC-2.
+**NeoLAT** is a specialized testbed designed for evaluating and experimenting with Local Agentic AI systems. It provides a robust environment for comparing performance across different local inference engines (MLX-based PyTorch, Ollama) and testing cognitive capabilities on tasks like Sudoku, ARC-1, and ARC-2.
 
 ## 🚀 Key Features
 
