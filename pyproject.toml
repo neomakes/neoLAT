@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "neolat"
+version = "0.1.0"
+description = "Local Agentic AI Testbed (MLX, PyTorch, Ollama)"
+requires-python = ">=3.10"
+dependencies = [
+    "mlx",
+    "mlx-lm",
+    "torch",
+    "torchvision",
+    "ollama",
+    "hydra-core",
+    "wandb",
+    "pandas",
+    "numpy",
+    "matplotlib",
+    "seaborn",
+    "tqdm",
+    "python-dotenv",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "ruff",
+    "black",
+    "mkdocs",
+    "mkdocs-material",
+    "jupyter",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["neolat*"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

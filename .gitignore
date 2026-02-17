@@ -1,0 +1,23 @@
+# Logs
+logs/
+*.log
+
+# Runtime data
+__pycache__/
+*.pyc
+
+# Data
+data/
+results/
+
+# Python build artifacts
+neolat.egg-info/
+build/
+dist/
+*.egg-info
+
+# System
+.DS_Store
+
+# Documentation artifacts
+site/
