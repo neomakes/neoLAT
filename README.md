@@ -40,7 +40,7 @@ neolat/
 1.  **Clone the repository:**
 
     ```bash
-    git clone https://github.com/StartLivin/neolat.git
+    git clone https://github.com/neomakes/neolat.git
     cd neolat
     ```
 
