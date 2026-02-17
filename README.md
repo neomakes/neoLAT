@@ -1,4 +1,12 @@
-# neoLAT (Local Agentic Testbed)
+<div align="center">
+  <img src="docs/assets/banner.png" alt="neoLAT - Local Agentic AI Testbed" width="100%">
+  
+  <p>
+    <a href="https://github.com/neomakes/neolat/actions"><img src="https://img.shields.io/github/actions/workflow/status/neomakes/neolat/ci.yml?branch=main&label=build&style=for-the-badge" alt="Build Status"></a>
+    <a href="https://github.com/neomakes/neolat/releases"><img src="https://img.shields.io/github/v/release/neomakes/neolat?style=for-the-badge&color=blue" alt="Version"></a>
+    <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green?style=for-the-badge" alt="License"></a>
+  </p>
+</div>
 
 **neoLAT** is a specialized testbed designed for evaluating and experimenting with Local Agentic AI systems. It provides a robust environment for comparing performance across different local inference engines (MLX-based PyTorch, Ollama) and testing cognitive capabilities on tasks like Sudoku, ARC-1, and ARC-2.
 
@@ -77,6 +85,12 @@ Then navigate to `http://127.0.0.1:8000` in your browser.
 
 Contributions to improve agents, environments, or analysis tools are welcome. Please ensure you update tests and documentation for any new features.
 
-## 📄 License
+## 📄 License & Copyright
 
-This project is licensed under the **GNU Affero General Public License v3.0**. See the [LICENSE](LICENSE) file for details.
+### Source Code
+
+The software source code in this repository is available under the **MIT License**. You are free to use, modify, and distribute the code. See the [LICENSE](LICENSE) file for details.
+
+### Documentation & Assets
+
+All documentation, brand assets, logos, and specific datasets (unless otherwise noted) are **Copyright © 2026 NeoMakes, Inc. All Rights Reserved.** They may not be reproduced, distributed, or used for commercial purposes without explicit written permission.

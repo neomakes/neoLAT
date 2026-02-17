@@ -2,7 +2,6 @@ site_name: Local Agentic AI Testbed
 theme:
   name: material
   features:
-    - navigation.tabs
     - navigation.sections
     - navigation.expand
     - content.code.copy
@@ -29,8 +28,43 @@ nav:
   - Experiments: experiments.md
   - Results & Analysis: results.md
 
+# Copyright & Footer Customization
+copyright: |
+  <div style="display: flex; align-items: center; gap: 15px;">
+    <img src="/assets/neomakes_logo.png" alt="NeoMakes Logo" style="height: 2.5em;">
+    <div style="line-height: 1.3;">
+      <a href="https://neomakes.com" target="_blank" style="font-size: 1.3em; font-weight: bold; color: inherit; text-decoration: none;">NeoMakes, Inc.</a><br>
+      <span style="font-size: 0.9em;">Copyright &copy; 2026, NeoMakes, Inc.</span>
+    </div>
+  </div>
+
+extra_javascript:
+  - javascripts/footer_custom.js
+
+extra:
+  generator: false # Disable default 'Made with Material for MkDocs' footer text
+  social:
+    - icon: simple/linktree
+      link: https://linktr.ee/neomakes?utm_source=linktree_profile_share&ltsid=4f7f4a4c-0976-4d93-9541-4eabc58c2e3e
+      name: NeoMakes Linktree
+    - icon: fontawesome/solid/globe
+      link: https://neomakes.com
+      name: NeoMakes Website
+    - icon: fontawesome/brands/linkedin
+      link: "https://www.linkedin.com/in/𝑵𝑬𝑶-a7b247390/"
+      name: LinkedIn
+    - icon: fontawesome/brands/github
+      link: https://github.com/neomakes
+      name: GitHub
+    - icon: fontawesome/brands/instagram
+      link: https://www.instagram.com/neomakes.official/
+      name: Instagram
+
 plugins:
   - search
+  - git-revision-date-localized:
+      type: date
+      enable_creation_date: false
   - mkdocstrings:
       handlers:
         python:

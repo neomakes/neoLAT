@@ -20,3 +20,5 @@ jupyter
 mkdocs-autorefs
 mkdocstrings[python]
 mkdocs-gen-files
+mkdocs-git-revision-date-localized-plugin
+

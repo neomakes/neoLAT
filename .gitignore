@@ -9,6 +9,8 @@ __pycache__/
 # Data
 data/
 results/
+docs/proprietary/
+
 
 # Python build artifacts
 neolat.egg-info/
