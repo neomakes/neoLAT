@@ -1,0 +1,5 @@
+mkdocs-material
+mkdocstrings[python]
+mkdocs-autorefs
+mkdocs-gen-files
+mkdocs-git-revision-date-localized-plugin
