@@ -1,4 +1,5 @@
 site_name: NeoLAT
+site_url: https://neomakes.github.io/neolat/
 theme:
   name: material
   custom_dir: overrides
@@ -38,7 +39,7 @@ nav:
 copyright: |
   <div style="display: flex; align-items: center; gap: 15px;">
     <a href="https://neomakes.com" target="_blank" style="display: flex; text-decoration: none;">
-      <img src="/assets/NeoLAT/neomakes_logo.png" alt="NeoMakes Logo" class="neomakes-logo" style="height: 2.5em;">
+      <img src="/neolat/assets/NeoLAT/neomakes_logo.png" alt="NeoMakes Logo" class="neomakes-logo" style="height: 2.5em;">
     </a>
     <div class="neomakes-copyright-container" style="line-height: 1.3;">
       <a href="https://neomakes.com" target="_blank" style="font-size: 1.3em; font-weight: bold; color: inherit; text-decoration: none;">NeoMakes</a><br>
