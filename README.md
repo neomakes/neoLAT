@@ -14,6 +14,10 @@
 
 **NeoLAT** is a specialized testbed designed for evaluating and experimenting with Local Agentic AI systems. It provides a robust environment for comparing performance across different local inference engines (MLX-based PyTorch, Ollama) and testing cognitive capabilities on tasks like Sudoku, ARC-1, and ARC-2.
 
+## Mission: Bridging the Gap for Mission-Critical Local AI
+
+NeoLAT is not just a testbed; it’s a crucible for the next generation of AI agents that must operate where the cloud cannot reach. We focus on safety, speed, and local autonomy for environments where failure is not an option.
+
 ## 🚀 Key Features
 
 - **Local Inference Focus**: Optimized for running powerful models locally on Apple Silicon (via MLX) and other platforms.
@@ -87,7 +91,14 @@ Then navigate to `http://127.0.0.1:8000` in your browser.
 
 ## 🤝 Contributing
 
-Contributions to improve agents, environments, or analysis tools are welcome. Please ensure you update tests and documentation for any new features.
+## 🤝 Contributing
+
+We are looking for engineers who want to push the boundaries of Local AI. By contributing to NeoLAT, you will:
+- **Master On-Device Optimization**: Gain rare expertise in MLX, quantization, and local inference.
+- **Solve Real-World Constraints**: Design agents for high-stakes, resource-constrained environments.
+- **Shape the Future of Privacy**: Help build a world where powerful AI doesn't require an internet connection.
+
+Join us in defining the standard for reliable, local agentic intelligence.
 
 ## 📄 License & Copyright
 
