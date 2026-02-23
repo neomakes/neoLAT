@@ -1,0 +1,1205 @@
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NeoLAT Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #080d1a;
+        --surface: #0f172a;
+        --card: #141f35;
+        --border: #1e3a5f;
+        --text: #e2e8f0;
+        --dim: #64748b;
+        --accent: #38bdf8;
+        --accent2: #818cf8;
+        --green: #4ade80;
+        --yellow: #fbbf24;
+        --red: #f87171;
+        --orange: #fb923c;
+        --cpu-color: #38bdf8;
+        --gpu-color: #818cf8;
+        --ram-color: #4ade80;
+        --ane-color: #fb923c;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: "Inter", sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        min-height: 100vh;
+      }
+
+      /* ── Layout ── */
+      .topbar {
+        background: rgba(15, 23, 42, 0.95);
+        backdrop-filter: blur(10px);
+        border-bottom: 1px solid var(--border);
+        padding: 14px 32px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+      }
+      .topbar-brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .topbar-brand h1 {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--accent);
+        letter-spacing: -0.02em;
+      }
+      .topbar-brand .phase-tag {
+        background: rgba(56, 189, 248, 0.15);
+        color: var(--accent);
+        font-size: 0.7rem;
+        font-weight: 600;
+        padding: 2px 8px;
+        border-radius: 20px;
+        border: 1px solid rgba(56, 189, 248, 0.3);
+      }
+      .topbar-right {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .live-pill {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(74, 222, 128, 0.1);
+        border: 1px solid rgba(74, 222, 128, 0.3);
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        color: var(--green);
+      }
+      .live-dot {
+        width: 7px;
+        height: 7px;
+        background: var(--green);
+        border-radius: 50%;
+        animation: pulse 1.5s infinite;
+      }
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.3;
+        }
+      }
+
+      .container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 28px 24px;
+      }
+
+      /* ── Section Headers ── */
+      .section-header {
+        font-size: 0.7rem;
+        font-weight: 600;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--dim);
+        margin-bottom: 14px;
+        margin-top: 32px;
+      }
+      /* ── grid-2 layout ── */
+      .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+      @media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } }
+
+      /* info-popover: hidden data sources; content is cloned into #info-tooltip */
+      .info-popover { display: none !important; }
+
+      /* #info-tooltip: body-level floating overlay — escapes all card overflow */
+      #info-tooltip {
+        position: fixed; z-index: 9999;
+        width: 280px;
+        background: rgba(15,23,42,0.97);
+        border: 1px solid rgba(56,189,248,0.3);
+        border-radius: 10px;
+        padding: 12px 14px;
+        font-size: 0.78rem; line-height: 1.5;
+        color: var(--text);
+        box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+        backdrop-filter: blur(12px);
+        opacity: 0; transform: translateY(-4px);
+        transition: opacity 0.15s ease, transform 0.15s ease;
+        pointer-events: auto;
+      }
+      #info-tooltip.visible { opacity: 1; transform: translateY(0); }
+      #info-tooltip .pop-title { font-weight: 700; color: var(--accent); margin-bottom: 6px; font-size: 0.82rem; }
+      #info-tooltip .pop-tag {
+        display: inline-block; margin-top: 6px;
+        background: rgba(56,189,248,0.1); color: var(--accent);
+        font-size: 0.67rem; padding: 2px 8px; border-radius: 20px;
+        border: 1px solid rgba(56,189,248,0.2);
+      }
+
+      /* ── Cards ── */
+      .card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 18px 20px;
+        position: relative;
+      }
+      .card-title {
+        font-size: 0.72rem;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--dim);
+        margin-bottom: 14px;
+      }
+
+      /* ── Grid ── */
+      .grid-3 {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 18px;
+      }
+      @media (max-width: 1100px) { .grid-3 { grid-template-columns: repeat(2, 1fr); } }
+      @media (max-width: 700px)  { .grid-3 { grid-template-columns: 1fr; } }
+
+      /* ── Stats ── */
+      .stat-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 6px 0;
+        border-bottom: 1px solid rgba(255,255,255,0.04);
+        position: relative;
+      }
+      .stat-row:last-child { border-bottom: none; }
+      .stat-label {
+        font-size: 0.78rem;
+        color: var(--dim);
+        display: flex;
+        align-items: center;
+        gap: 5px;
+      }
+      .stat-value {
+        font-size: 0.82rem;
+        font-family: 'JetBrains Mono', monospace;
+        font-weight: 500;
+        color: var(--text);
+      }
+      .stat-value.accent { color: var(--accent); }
+
+      /* ── Power grid ── */
+      .power-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+        margin-bottom: 12px;
+      }
+      .power-item { text-align: center; }
+      .power-value {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 1.6rem;
+        font-weight: 600;
+        line-height: 1.1;
+      }
+      .power-label {
+        font-size: 0.68rem;
+        color: var(--dim);
+        letter-spacing: 0.04em;
+        margin-top: 3px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+      }
+
+      /* ── Gauge ── */
+      .gauge-track {
+        background: rgba(255,255,255,0.06);
+        border-radius: 4px;
+        height: 6px;
+        overflow: hidden;
+        margin-top: 4px;
+      }
+      .gauge-fill {
+        height: 100%;
+        border-radius: 4px;
+        transition: width 0.4s ease;
+      }
+      .gauge-label {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.68rem;
+        color: var(--dim);
+        margin-top: 8px;
+      }
+
+      /* ── Cluster chips ── */
+      .cluster-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin: 10px 0;
+      }
+      .cluster-chip {
+        font-size: 0.68rem;
+        font-family: 'JetBrains Mono', monospace;
+        padding: 3px 10px;
+        border-radius: 20px;
+        border: 1px solid rgba(255,255,255,0.12);
+        background: rgba(255,255,255,0.05);
+      }
+
+      /* ── Charts ── */
+      .chart-container {
+        height: 140px;
+        margin-top: 12px;
+      }
+
+      /* ── Info button ── */
+      .info-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        border: 1px solid rgba(56,189,248,0.4);
+        background: rgba(56,189,248,0.08);
+        color: var(--accent);
+        font-size: 9px;
+        font-style: italic;
+        font-family: 'JetBrains Mono', monospace;
+        cursor: pointer;
+        transition: background 0.15s;
+        flex-shrink: 0;
+      }
+      .info-btn:hover { background: rgba(56,189,248,0.2); }
+
+      /* ── Refresh / Live ── */
+      .refresh-btn {
+        background: rgba(56,189,248,0.1);
+        border: 1px solid rgba(56,189,248,0.3);
+        color: var(--accent);
+        font-size: 0.75rem;
+        font-family: 'Inter', sans-serif;
+        padding: 5px 14px;
+        border-radius: 20px;
+        cursor: pointer;
+        transition: background 0.15s;
+      }
+      .refresh-btn:hover { background: rgba(56,189,248,0.2); }
+      .live-indicator {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(74,222,128,0.1);
+        border: 1px solid rgba(74,222,128,0.3);
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        color: var(--green);
+        transition: opacity 0.3s;
+      }
+
+      /* ── Badges ── */
+      .badge {
+        font-size: 0.7rem;
+        padding: 2px 8px;
+        border-radius: 20px;
+        font-weight: 600;
+      }
+      .badge-ok   { background: rgba(74,222,128,0.15);  color: var(--green);  border: 1px solid rgba(74,222,128,0.3);  }
+      .badge-warn { background: rgba(251,191,36,0.15);  color: var(--yellow); border: 1px solid rgba(251,191,36,0.3);  }
+
+      /* ── Loading overlay ── */
+      .loading-overlay {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 14px;
+        padding: 60px 0;
+        color: var(--dim);
+        font-size: 0.85rem;
+      }
+      .spinner {
+        width: 22px;
+        height: 22px;
+        border: 2px solid var(--border);
+        border-top-color: var(--accent);
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+      @keyframes spin { to { transform: rotate(360deg); } }
+
+      /* ── Code block ── */
+      .code-block {
+        background: rgba(0,0,0,0.3);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 10px 12px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.7rem;
+        color: var(--text);
+        white-space: pre-wrap;
+        word-break: break-word;
+        max-height: 200px;
+        overflow-y: auto;
+      }
+
+    </style>
+
+  </head>
+  <body>
+    <!-- Body-level tooltip overlay (escapes all overflow clipping) -->
+    <div id="info-tooltip"></div>
+    <!-- ──────────────────────────────────────────────────────────── -->
+    <div class="topbar">
+      <div class="topbar-brand">
+        <h1>NeoLAT</h1>
+        <span class="phase-tag">Phase 2 · Somatic Monitor</span>
+      </div>
+      <div class="topbar-right">
+        <label style="font-size:0.72rem;color:var(--dim);margin-right:4px">해상도</label>
+        <select id="resolution-select" onchange="setResolution(this.value)" style="background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:0.72rem;cursor:pointer">
+          <option value="200">200 ms</option>
+          <option value="500" selected>500 ms</option>
+          <option value="1000">1 s</option>
+          <option value="2000">2 s</option>
+          <option value="5000">5 s</option>
+        </select>
+        <div id="live-status" class="live-indicator" style="opacity:0.4">
+          <div class="live-dot"></div><span>Live</span>
+        </div>
+        <button class="refresh-btn" onclick="refreshModelData()">↻ Refresh Analysis</button>
+      </div>
+    </div>
+    <div class="container">
+      <div class="section-header">⚡ Metabolic — 에너지 대사 (Energy Metabolism)</div>
+      <!-- ROW 1: Power | CPU Clusters | Memory & Bandwidth -->
+      <div class="grid-3">
+        <!-- Power Draw -->
+        <div class="card">
+          <div class="card-title">🔋 Power Draw (mW)</div>
+          <div class="power-grid" style="grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:12px">
+            <div class="power-item">
+              <div class="power-value" id="cpu-pwr" style="color:var(--cpu-color)">—</div>
+              <div class="power-label">CPU mW <button class="info-btn" onclick="togglePop(this,'pop-cpu')">i</button></div>
+              <div class="info-popover" id="pop-cpu"><div class="pop-title">CPU Total Power (mW)</div>E+P 클러스터 합산 전력. LLM 추론 중 300–800 mW.<br><span class="pop-tag">집중 사고 (Focused Thinking)</span></div>
+            </div>
+            <div class="power-item">
+              <div class="power-value" id="gpu-pwr" style="color:var(--gpu-color)">—</div>
+              <div class="power-label">GPU mW <button class="info-btn" onclick="togglePop(this,'pop-gpu')">i</button></div>
+              <div class="info-popover" id="pop-gpu"><div class="pop-title">GPU Power (mW)</div>Metal GPU 코어. CPU-only 모드에서 0에 가까움. GPU-offload 시 급등.<br><span class="pop-tag">병렬 시각 처리 (Parallel Visual Processing)</span></div>
+            </div>
+            <div class="power-item">
+              <div class="power-value" id="ane-pwr" style="color:var(--ane-color)">—</div>
+              <div class="power-label">ANE mW <button class="info-btn" onclick="togglePop(this,'pop-ane')">i</button></div>
+              <div class="info-popover" id="pop-ane"><div class="pop-title">ANE Power (mW)</div>Apple Neural Engine. INT8/FP16 모델에서 간헐 활성화. 고속 행렬 연산 담당.<br><span class="pop-tag">직관적 반사 반응 (Reflex Response)</span></div>
+            </div>
+            <div class="power-item">
+              <div class="power-value" id="comb-pwr" style="color:var(--text)">—</div>
+              <div class="power-label">Total mW <button class="info-btn" onclick="togglePop(this,'pop-total')">i</button></div>
+              <div class="info-popover" id="pop-total"><div class="pop-title">SoC 총 소비 전력 (mW)</div>CPU+GPU+ANE 합산. M4 Pro 패키지 TDP ≈ 30W. 아이들 시 1–3W.<br><span class="pop-tag">전체 신진대사 부하</span></div>
+            </div>
+          </div>
+          <div class="chart-container"><canvas id="powerChart"></canvas></div>
+        </div>
+        <!-- CPU Cluster Activity -->
+        <div class="card">
+          <div class="card-title">⚙️ CPU Cluster Activity</div>
+          <div class="stat-row">
+            <span class="stat-label">Thermal
+              <button class="info-btn" onclick="togglePop(this,'pop-thermal')">i</button>
+              <div class="info-popover" id="pop-thermal" style="top:100%;left:0"><div class="pop-title">열 압력 (Thermal Pressure)</div>Nominal→Moderate→Heavy→Critical. Heavy 이상 시 클럭 하향 → tok/s 감소.<br><span class="pop-tag">인지 피로도 (Cognitive Fatigue)</span></div>
+            </span>
+            <span class="stat-value" id="thermal">—</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">E-Cluster Active %
+              <button class="info-btn" onclick="togglePop(this,'pop-eclust')">i</button>
+              <div class="info-popover" id="pop-eclust" style="top:100%;left:0"><div class="pop-title">E-Cluster (효율 코어 ×4)</div>자동 처리 — 항상 가동. ~1 GHz. 백그라운드 유지 작업.<br><i>idle_ratio</i>로 측정<br><span class="pop-tag">자동 처리 (Automatic Processing)</span></div>
+            </span>
+            <span class="stat-value accent" id="e-active">—</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">P-Cluster Active %
+              <button class="info-btn" onclick="togglePop(this,'pop-pclust')">i</button>
+              <div class="info-popover" id="pop-pclust" style="top:100%;left:0"><div class="pop-title">P0+P1 Cluster (성능 코어 ×10)</div>LLM 생성 중 2–4 GHz 부스트. 유휴 시 파워 게이팅.<br><i>idle_ratio</i>로 측정<br><span class="pop-tag">집중 사고 (Focused Thinking)</span></div>
+            </span>
+            <span class="stat-value" style="color:var(--gpu-color)" id="p-active">—</span>
+          </div>
+          <div style="margin:8px 0 4px;font-size:0.72rem;color:var(--dim)">클러스터 상세
+            <button class="info-btn" onclick="togglePop(this,'pop-clusters')">i</button>
+            <div class="info-popover" id="pop-clusters" style="top:100%;left:0"><div class="pop-title">M4 Pro 클러스터</div><b style="color:var(--cpu-color)">E-Cluster</b>: 효율코어 ×4, ~1 GHz<br><b style="color:var(--gpu-color)">P0-Cluster</b>: 성능코어 ×5, 유휴시 게이팅<br><b style="color:var(--ane-color)">P1-Cluster</b>: 성능코어 ×5, LLM 시 부스트<span class="pop-tag">집중 사고 코어</span></div>
+          </div>
+          <div class="cluster-chips" id="cluster-chips"><span style="color:var(--dim);font-size:0.8rem">Waiting…</span></div>
+          <div class="chart-container" style="height:120px;margin-top:10px"><canvas id="clusterChart"></canvas></div>
+        </div>
+        <!-- Process Footprint -->
+        <div class="card">
+          <div class="card-title">🏗️ Structural <span class="phase-tag" style="font-size:0.6rem;margin-left:6px">Process + UMA</span></div>
+          <div class="stat-row">
+            <span class="stat-label">Process CPU %
+              <button class="info-btn" onclick="togglePop(this,'pop-process-cpu')">i</button>
+              <div class="info-popover" id="pop-process-cpu" style="top:100%;left:0"><div class="pop-title">Ollama Runner Load</div>LLM 추론 프로세스(ollama_runner)의 CPU 점유율. (Core 수 × 100%). P-Cluster 활성도와 비례.<br><span class="pop-tag">인지 부하 (Cognitive Load)</span></div>
+            </span>
+            <span class="stat-value accent" id="proc-cpu">—</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">RSS Memory (GB)
+              <button class="info-btn" onclick="togglePop(this,'pop-process-rss')">i</button>
+              <div class="info-popover" id="pop-process-rss" style="top:100%;left:0"><div class="pop-title">프로세스 메모리 (RSS)</div>RAM에 상주하는 실제 물리 메모리. 모델 가중치 + KV Cache + 실행 코드.<br><span class="pop-tag">활성 지식 용량 (Active Knowledge)</span></div>
+            </span>
+            <span class="stat-value" id="proc-rss" style="color:var(--green)">—</span>
+          </div>
+          <div style="margin-top:12px">
+             <div class="gauge-label">
+              <span style="color:var(--dim);font-size:0.7rem">Process Load</span>
+              <span id="proc-cpu-label" style="font-family:monospace;font-size:0.7rem">—</span>
+            </div>
+            <div class="gauge-track"><div class="gauge-fill" id="proc-gauge" style="background:var(--accent);width:0%"></div></div>
+          </div>
+          <div class="chart-container" style="height:100px;margin-top:14px"><canvas id="processChart"></canvas></div>
+        </div>
+        <!-- Memory & Bandwidth -->
+        <div class="card">
+          <div class="card-title">🧠 Unified Memory (UMA)</div>
+          <div class="stat-row">
+            <span class="stat-label">Total (M4 Pro)
+              <button class="info-btn" onclick="togglePop(this,'pop-ram-total')">i</button>
+              <div class="info-popover" id="pop-ram-total" style="top:100%;left:0"><div class="pop-title">Unified Memory 크기 (GB)</div>CPU·GPU·ANE 공유 풀 (LPDDR5X). 모델 가중치+OS+프로세스 전부 여기에.<br><span class="pop-tag">장기 기억 총용량</span></div>
+            </span>
+            <span class="stat-value accent" id="ram-total">—</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Used (GB)
+              <button class="info-btn" onclick="togglePop(this,'pop-ram-used')">i</button>
+              <div class="info-popover" id="pop-ram-used" style="top:100%;left:0"><div class="pop-title">현재 점유량 (GB)</div>3B Q4_K_M 로드 시 약 +2–3 GB. OS 포함 일반 12–15 GB.<br><span class="pop-tag">장기 기억 사용량 (Long-Term Memory)</span></div>
+            </span>
+            <span class="stat-value" id="ram-used">—</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Available (GB)
+              <button class="info-btn" onclick="togglePop(this,'pop-ram-avail')">i</button>
+              <div class="info-popover" id="pop-ram-avail" style="top:100%;left:0"><div class="pop-title">가용 메모리 (GB)</div>모델 크기보다 작으면 Swap 발생. 권장: 항상 4 GB 이상 유지.<br><span class="pop-tag">가용 장기 기억 공간</span></div>
+            </span>
+            <span class="stat-value green" id="ram-avail">—</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Swap (GB)
+              <button class="info-btn" onclick="togglePop(this,'pop-swap')">i</button>
+              <div class="info-popover" id="pop-swap" style="top:100%;left:0"><div class="pop-title">Swap 사용량 (GB)</div>RAM 초과 시 NAND SSD overflow. 속도 10–100× 감소 → tok/s 급락.<br><span class="pop-tag">⚠️ 0 초과 시 심각한 성능 저하</span></div>
+            </span>
+            <span class="stat-value" id="ram-swap">—</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Bandwidth (GB/s)
+              <button class="info-btn" onclick="togglePop(this,'pop-bw')">i</button>
+              <div class="info-popover" id="pop-bw" style="top:100%;left:0"><div class="pop-title">메모리 대역폭 (Throughput)</div>실시간 DRAM 대역폭 사용량.<br>M4 Pro Max: ~273 GB/s.<br><span class="pop-tag">Reading Speed — 저장된 지식 인출 속도</span></div>
+            </span>
+            <span class="stat-value" style="color:var(--yellow)" id="dram-bw">—</span>
+          </div>
+          <div style="margin-top:10px">
+            <div class="gauge-label">
+              <span style="color:var(--dim);font-size:0.72rem">Memory Pressure</span>
+              <span id="ram-pct-label" style="font-family:monospace;font-size:0.72rem">—</span>
+            </div>
+            <div class="gauge-track"><div class="gauge-fill" id="ram-gauge" style="background:var(--green);width:0%"></div></div>
+          </div>
+          <div class="chart-container" style="height:100px;margin-top:10px"><canvas id="ramChart"></canvas></div>
+        </div>
+      </div><!-- /Metabolic row -->
+
+      <!-- ── FUNCTIONAL ─────────────────────────────────────────── -->
+      <div class="section-header" style="margin-top:24px">⚙️ Functional — 인지 활동 (Cluster + Memory State)</div>
+      <div class="grid-2" style="margin-top:0">
+
+        <!-- Cache Memory Proxy card -->
+        <div class="card">
+          <div class="card-title">🗄️ Cache Memory Proxy <span style="color:var(--yellow);font-size:0.65rem;margin-left:6px">⚠️ Indirect (vm_stat)</span></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+            <div>
+              <div style="font-size:0.7rem;color:var(--dim);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">L1/L2 Cache (Working Memory)
+                <button class="info-btn" onclick="togglePop(this,'pop-l1l2')">i</button>
+                <div class="info-popover" id="pop-l1l2" style="top:100%;left:0"><div class="pop-title">L1/L2 캐시 — 작업 기억</div>직접 측정 불가 (SIP 제한). Page Fault Rate = 가상 메모리 변환 실패율 → L1/L2 미스 간접 지표.<br><span class="pop-tag">Working Memory — ultra-fast scratchpad</span></div>
+              </div>
+              <div class="power-value" id="page-faults" style="font-size:1.2rem;color:var(--cpu-color)">—</div>
+              <div style="font-size:0.68rem;color:var(--dim);margin-top:3px">page faults / s</div>
+            </div>
+            <div>
+              <div style="font-size:0.7rem;color:var(--dim);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">SLC / L3 (Short-Term Memory)
+                <button class="info-btn" onclick="togglePop(this,'pop-slc')">i</button>
+                <div class="info-popover" id="pop-slc" style="top:100%;left:0"><div class="pop-title">SLC — 단기 기억</div>CPU+GPU+ANE 공유 16–32 MB on-chip 캐시. KV-Cache hot path 저장소.<br>Pageins Rate = DRAM→SLC 로드율.<br><span class="pop-tag">Short-Term Memory — recently used weights</span></div>
+              </div>
+              <div class="power-value" id="pageins" style="font-size:1.2rem;color:var(--accent2)">—</div>
+              <div style="font-size:0.68rem;color:var(--dim);margin-top:3px">pageins / s</div>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+            <div style="padding:8px;background:rgba(255,255,255,0.02);border-radius:6px;text-align:center">
+              <div style="font-size:0.65rem;color:var(--dim)">Active Pages</div>
+              <div class="stat-value" id="vm-active" style="font-size:0.85rem">—</div>
+              <div style="font-size:0.62rem;color:var(--dim)">MB</div>
+            </div>
+            <div style="padding:8px;background:rgba(255,255,255,0.02);border-radius:6px;text-align:center">
+              <div style="font-size:0.65rem;color:var(--dim)">Inactive Pages</div>
+              <div class="stat-value" id="vm-inactive" style="font-size:0.85rem;color:var(--dim)">—</div>
+              <div style="font-size:0.62rem;color:var(--dim)">MB</div>
+            </div>
+            <div style="padding:8px;background:rgba(255,255,255,0.02);border-radius:6px;text-align:center">
+              <div style="font-size:0.65rem;color:var(--dim)">Compressed</div>
+              <div class="stat-value" id="vm-compressed" style="font-size:0.85rem;color:var(--yellow)">—</div>
+              <div style="font-size:0.62rem;color:var(--dim)">MB</div>
+            </div>
+          </div>
+        </div><!-- /Cache Proxy card -->
+
+        <!-- Memory State card -->
+        <div class="card">
+          <div class="card-title">🧠 Memory State <span style="color:var(--yellow);font-size:0.65rem;margin-left:6px">⚠️ Indirect (sysctl)</span></div>
+          <div class="stat-row" style="margin-bottom:8px">
+            <span class="stat-label">Memory Pressure
+              <button class="info-btn" onclick="togglePop(this,'pop-mempressure')">i</button>
+              <div class="info-popover" id="pop-mempressure" style="top:100%;left:0"><div class="pop-title">메모리 압력 (sysctl)</div>0=Normal · 1=Warning · 2=Urgent · 3=Critical<br><span class="pop-tag">Cognitive Fatigue Proxy</span></div>
+            </span>
+            <span class="stat-value" id="mem-pressure-label" style="color:var(--green)">—</span>
+          </div>
+          <div class="gauge-track" style="margin-bottom:16px"><div class="gauge-fill" id="mem-pressure-gauge" style="background:var(--green);width:0%"></div></div>
+          <div class="stat-row"><span class="stat-label">Swap Used</span><span class="stat-value" id="swap-used">—</span></div>
+          <div class="stat-row"><span class="stat-label">DRAM Bandwidth</span><span class="stat-value" id="dram-bw-func" style="color:var(--dim)">N/A</span></div>
+        </div><!-- /Memory State card -->
+
+      </div><!-- /Functional grid-2 -->
+
+      <!-- ── COGNITIVE ─────────────────────────────────────────── -->
+      <div class="section-header" style="margin-top:24px">💡 Cognitive — 사고 결과 (Inference Performance)</div>
+      <div class="grid-3" style="margin-top:0">
+
+        <!-- Response Latency card (TTFT + Energy) -->
+        <div class="card">
+          <div class="card-title">⚡ Response Latency <span style="color:var(--dim);font-size:0.65rem;margin-left:6px">Streaming Measurement</span></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;text-align:center">
+            <div>
+              <div style="font-size:0.68rem;color:var(--dim);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Time to First Token
+                <button class="info-btn" onclick="togglePop(this,'pop-ttft')">i</button>
+                <div class="info-popover" id="pop-ttft" style="top:100%;left:0"><div class="pop-title">TTFT — 첫 번째 토큰까지 대기 시간</div>Prefill 완료 후 첫 출력까지. 짧을수록 체감 응답성 우수.<br><span class="pop-tag">Reaction Time — perceived responsiveness</span></div>
+              </div>
+              <div class="power-value" id="cog-ttft" style="font-size:2rem;color:var(--yellow)">—</div>
+              <div style="font-size:0.72rem;color:var(--dim);margin-top:4px">ms</div>
+            </div>
+            <div>
+              <div style="font-size:0.68rem;color:var(--dim);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Energy / Token
+                <button class="info-btn" onclick="togglePop(this,'pop-energy')">i</button>
+                <div class="info-popover" id="pop-energy" style="top:100%;left:0"><div class="pop-title">Energy per Token (mJ)</div>SoC 평균 소비 전력 ÷ TPS. 낮을수록 에너지 효율 우수.<br><span class="pop-tag">Metabolic Efficiency — cost per thought</span></div>
+              </div>
+              <div class="power-value" id="cog-energy" style="font-size:2rem;color:var(--orange)">—</div>
+              <div style="font-size:0.72rem;color:var(--dim);margin-top:4px">mJ / token</div>
+            </div>
+          </div>
+          <div class="stat-row"><span class="stat-label">Token Speed (live)</span><span class="stat-value" id="cog-tps" style="color:var(--green)">—</span></div>
+          <div style="margin-top:14px;text-align:center">
+            <button onclick="measureCognitive()" id="cog-btn" style="background:rgba(56,189,248,0.15);color:var(--accent);border:1px solid rgba(56,189,248,0.3);padding:7px 20px;border-radius:8px;cursor:pointer;font-size:0.8rem;font-family:inherit">▶ Measure (live inference)</button>
+            <div id="cog-status" style="font-size:0.7rem;color:var(--dim);margin-top:8px">Click to run streaming measurement</div>
+          </div>
+        </div><!-- /Response Latency card -->
+
+        <!-- Cognitive KPIs card -->
+        <div class="card">
+          <div class="card-title">🎯 Cognitive KPIs <span style="color:var(--dim);font-size:0.65rem;margin-left:6px">Snapshot Summary</span></div>
+          <div class="stat-row">
+            <span class="stat-label">Thinking Speed
+              <button class="info-btn" onclick="togglePop(this,'pop-kpi-tps')">i</button>
+              <div class="info-popover" id="pop-kpi-tps" style="top:100%;left:0"><div class="pop-title">Thinking Speed (tok/s)</div>정적인 벤치마크 테스트에서 측정된 초당 출력 토큰 수.<br><span class="pop-tag">Cognitive Throughput</span></div>
+            </span>
+            <span class="stat-value accent" id="kpi-tps">—</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Context Used
+              <button class="info-btn" onclick="togglePop(this,'pop-kpi-ctx')">i</button>
+              <div class="info-popover" id="pop-kpi-ctx" style="top:100%;left:0"><div class="pop-title">Context Used (Slots)</div>KV 캐시에 저장된 현재 문맥의 길이. 사고의 깊이와 비례.<br><span class="pop-tag">Working Memory Load</span></div>
+            </span>
+            <span class="stat-value" id="kpi-ctx">—</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Total Latency
+              <button class="info-btn" onclick="togglePop(this,'pop-kpi-lat')">i</button>
+              <div class="info-popover" id="pop-kpi-lat" style="top:100%;left:0"><div class="pop-title">Total Latency (s)</div>전체 추론 과정에 소요된 시간.<br><span class="pop-tag">Processing Time</span></div>
+            </span>
+            <span class="stat-value" id="kpi-latency">—</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Prompt Speed
+              <button class="info-btn" onclick="togglePop(this,'pop-kpi-ptps')">i</button>
+              <div class="info-popover" id="pop-kpi-ptps" style="top:100%;left:0"><div class="pop-title">Prompt Speed (tok/s)</div>입력 프롬프트를 읽어들이는 속도 (Prefill).<br><span class="pop-tag">Reading Comprehension Speed</span></div>
+            </span>
+            <span class="stat-value" id="kpi-ptps">—</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Model Load
+              <button class="info-btn" onclick="togglePop(this,'pop-kpi-load')">i</button>
+              <div class="info-popover" id="pop-kpi-load" style="top:100%;left:0"><div class="pop-title">Model Load Time (ms)</div>모델을 메모리에 올리는 데 걸린 시간.<br><span class="pop-tag">Knowledge Retrieval Latency</span></div>
+            </span>
+            <span class="stat-value" id="kpi-load">—</span>
+          </div>
+        </div><!-- /Cognitive KPIs card -->
+
+      </div><!-- /Cognitive grid-3 (CLOSED) -->
+
+
+      <!-- ── Model Analysis ─────────────────────────────────────────── -->
+      <div class="section-header">🧩 Model Analysis — Static Snapshot</div>
+      <div id="static-loading" class="loading-overlay">
+        <div class="spinner"></div>
+        <div>Running model analysis… (10-20 sec)</div>
+      </div>
+      <div id="static-content" class="grid-3" style="display: none">
+        <!-- Tech Spec -->
+        <div class="card">
+          <div class="card-title">📐 Model Specification</div>
+          <div id="specs-content"></div>
+        </div>
+
+        <!-- Cognitive Metrics -->
+        <div class="card">
+          <div class="card-title">🧠 Cognitive Metrics</div>
+          <div id="metrics-content"></div>
+        </div>
+
+        <!-- CoT -->
+        <div class="card">
+          <div class="card-title">💬 Reasoning (Chain-of-Thought)</div>
+          <div id="cot-content"></div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // ── Chart.js global defaults ─────────────────────────────────────────────────
+      Chart.defaults.color = "#64748b";
+      Chart.defaults.borderColor = "rgba(255,255,255,0.05)";
+      Chart.defaults.font.family = "'JetBrains Mono', monospace";
+      Chart.defaults.font.size = 10;
+
+      const MAX_POINTS = 60; // 60 samples × 250ms = 15s window
+
+      function makeTimeSeries(label, color) {
+        return { labels: [], data: [], label, color };
+      }
+
+      const series = {
+        cpu: makeTimeSeries("CPU Power", "#38bdf8"),
+        gpu: makeTimeSeries("GPU Power", "#818cf8"),
+        ane: makeTimeSeries("ANE Power", "#fb923c"),
+        ram: makeTimeSeries("RAM Used %", "#4ade80"),
+        eClust: makeTimeSeries("E-Cluster Active%", "#38bdf8"),
+        p0Clust: makeTimeSeries("P0 Active%", "#818cf8"),
+        p1Clust: makeTimeSeries("P1 Active%", "#fb923c"),
+        procCpu: makeTimeSeries("Proc CPU%", "#f472b6"),
+      };
+
+      function pushPoint(s, ts, val) {
+        const t = new Date(ts / 1e6);
+        const label = t.toLocaleTimeString("en-US", {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+        });
+        s.labels.push(label);
+        s.data.push(val);
+        if (s.labels.length > MAX_POINTS) {
+          s.labels.shift();
+          s.data.shift();
+        }
+      }
+
+      // ── Build Charts ─────────────────────────────────────────────────────────────
+
+      function buildLineChart(canvasId, datasets, yLabel = "") {
+        const ctx = document.getElementById(canvasId);
+        if (!ctx) return null;
+        return new Chart(ctx, {
+          type: "line",
+          data: {
+            labels: [],
+            datasets: datasets.map((d) => ({
+              label: d.label,
+              data: d.data,
+              borderColor: d.color,
+              backgroundColor: d.color + "18",
+              borderWidth: 1.5,
+              pointRadius: 0,
+              tension: 0.4,
+              fill: true,
+            })),
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: { duration: 0 },
+            interaction: { mode: "index", intersect: false },
+            scales: {
+              x: {
+                ticks: { maxTicksLimit: 5, maxRotation: 0 },
+                grid: { display: false },
+              },
+              y: {
+                beginAtZero: true,
+                title: { display: !!yLabel, text: yLabel },
+                ticks: { maxTicksLimit: 4 },
+              },
+            },
+            plugins: {
+              legend: {
+                position: "bottom",
+                labels: { boxWidth: 10, padding: 10, font: { size: 10 } },
+              },
+            },
+          },
+        });
+      }
+
+      const powerChart = buildLineChart(
+        "powerChart",
+        [series.cpu, series.gpu, series.ane],
+        "mW",
+      );
+      const ramChart = buildLineChart("ramChart", [series.ram], "%");
+      const clusterChart = buildLineChart(
+        "clusterChart",
+        [series.eClust, series.p0Clust, series.p1Clust],
+        "%",
+      );
+      const processChart = buildLineChart("processChart", [series.procCpu], "%");
+
+      function syncChartLabels(chart, s) {
+        chart.data.labels = s.labels;
+        chart.update("none");
+      }
+
+      // ── Somatic Polling ──────────────────────────────────────────────────────────
+
+      let lastTs = 0;
+      let somaticActive = false;
+
+      async function pollSomatic() {
+        try {
+          const r = await fetch(`/api/somatic?since=${lastTs}`);
+          if (!r.ok) {
+            updateLiveStatus(false);
+            return;
+          }
+          const samples = await r.json();
+          if (!samples.length) return;
+          updateLiveStatus(true);
+
+          samples.forEach((s) => {
+            lastTs = s.timestamp;
+            const ts = s.timestamp;
+
+            pushPoint(series.cpu, ts, s.cpu_power_mw || 0);
+            pushPoint(series.gpu, ts, s.gpu_power_mw || 0);
+            pushPoint(series.ane, ts, s.ane_power_mw || 0);
+            pushPoint(series.ram, ts, s.ram_percent || 0);
+
+            const cl = s.clusters || {};
+            const eActive = cl["E-Cluster"]
+              ? Math.round((1 - (cl["E-Cluster"].idle_ratio || 0)) * 100)
+              : 0;
+            const p0Active = cl["P0-Cluster"]
+              ? Math.round((1 - (cl["P0-Cluster"].idle_ratio || 0)) * 100)
+              : 0;
+            const p1Active = cl["P1-Cluster"]
+              ? Math.round((1 - (cl["P1-Cluster"].idle_ratio || 0)) * 100)
+              : 0;
+            pushPoint(series.eClust, ts, eActive);
+            pushPoint(series.p0Clust, ts, p0Active);
+            pushPoint(series.p1Clust, ts, p1Active);
+            
+            // Process CPU (NeoRay structure: s.process.cpu_pct)
+            const procCpu = s.process ? (s.process.cpu_pct || 0) : (s.process_cpu_pct || 0);
+            pushPoint(series.procCpu, ts, procCpu);
+          });
+
+          const latest = samples[samples.length - 1];
+
+          // Power values
+          setText("cpu-pwr", Math.round(latest.cpu_power_mw || 0));
+          setText("gpu-pwr", Math.round(latest.gpu_power_mw || 0));
+          setText("ane-pwr", Math.round(latest.ane_power_mw || 0));
+          setText("comb-pwr", Math.round(latest.combined_power_mw || 0));
+
+          // RAM
+          setText("ram-total", (latest.ram_total_gb || 0) + " GB");
+          setText("ram-used", (latest.ram_used_gb || 0).toFixed(1) + " GB");
+          setText("ram-avail", (latest.ram_available_gb || 0).toFixed(1) + " GB");
+          const swapGb = latest.swap_used_gb || 0;
+          setText("ram-swap", swapGb > 0 ? swapGb.toFixed(1) + " GB ⚠️" : "0 GB");
+          const pct = latest.ram_percent || 0;
+          setText("ram-pct-label", pct.toFixed(1) + "%");
+          const gauge = document.getElementById("ram-gauge");
+          if (gauge) {
+            gauge.style.width = pct + "%";
+            gauge.style.background = pct > 85 ? "var(--red)" : pct > 70 ? "linear-gradient(90deg,var(--green),var(--yellow))" : "var(--green)";
+          }
+
+          // Thermal
+          const thermal = latest.thermal_pressure || "Nominal";
+          const thermalEl = document.getElementById("thermal");
+          if (thermalEl) {
+            const color = thermal === "Nominal" ? "var(--green)" : thermal === "Moderate" ? "var(--yellow)" : "var(--red)";
+            thermalEl.innerHTML = `<span style="color:${color}">${thermal}</span>`;
+          }
+
+          // Process Metrics
+          if (latest.process) {
+              const pCPU = latest.process.cpu_pct || 0;
+              const pRSS = latest.process.rss_gb || 0;
+              setText("proc-cpu", pCPU.toFixed(1) + "%");
+              setText("proc-rss", pRSS.toFixed(3) + " GB");
+              const g2 = document.getElementById("proc-gauge");
+              if (g2) {
+                  g2.style.width = Math.min(100, pCPU) + "%";
+                  g2.style.background = pCPU > 80 ? "var(--red)" : "var(--accent)";
+              }
+              setText("proc-cpu-label", pCPU.toFixed(1) + "%");
+          }
+
+          // VM Metrics (Cache Proxy)
+          setText("page-faults", (latest.page_fault_s ?? latest.cow_faults_s ?? latest.page_faults_s ?? "—").toLocaleString());
+          setText("pageins", (latest.pageins_s ?? "—").toLocaleString());
+          setText("vm-active", latest.vm_active_mb != null ? latest.vm_active_mb.toFixed(0) : "—");
+          setText("vm-inactive", latest.vm_inactive_mb != null ? latest.vm_inactive_mb.toFixed(0) : "—");
+          setText("vm-compressed", latest.vm_compressed_mb != null ? latest.vm_compressed_mb.toFixed(0) : "—");
+
+          // Cluster active %
+          const clLatest = latest.clusters || {};
+          const eAct = clLatest["E-Cluster"] ? Math.round((1 - (clLatest["E-Cluster"].idle_ratio || 0)) * 100) : 0;
+          const pAct = Math.round(((clLatest["P0-Cluster"] ? (1-clLatest["P0-Cluster"].idle_ratio) : 0) + (clLatest["P1-Cluster"] ? (1-clLatest["P1-Cluster"].idle_ratio) : 0)) / 2 * 100);
+          setText("e-active", eAct + "%");
+          setText("p-active", pAct + "%");
+
+          // Cluster chips
+          updateClusterChips(latest.clusters || {});
+
+          // Bandwidth
+          const bw = latest.dram_bandwidth_gbs;
+          const bwText = bw != null ? bw.toFixed(1) + " GB/s" : "N/A";
+          setText("dram-bw", bwText);
+          setText("dram-bw-func", bwText);
+
+          // Memory Pressure
+          const mp = latest.memory_pressure ?? 0;
+          const mpLabels = ["0 — Normal", "1 — Warning", "2 — Urgent", "3 — Critical"];
+          const mpColors = ["var(--green)", "var(--yellow)", "var(--orange)", "var(--red)"];
+          const mpLabel = document.getElementById("mem-pressure-label");
+          const mpGauge = document.getElementById("mem-pressure-gauge");
+          if (mpLabel) { mpLabel.textContent = mpLabels[mp] ?? mp; mpLabel.style.color = mpColors[mp] ?? "var(--text)"; }
+          if (mpGauge) { mpGauge.style.width = (mp / 3 * 100) + "%"; mpGauge.style.background = mpColors[mp] ?? "var(--green)"; }
+
+          // Sync charts
+          if (powerChart) syncChartLabels(powerChart, series.cpu);
+          if (ramChart) syncChartLabels(ramChart, series.ram);
+          if (clusterChart) syncChartLabels(clusterChart, series.eClust);
+          if (processChart) syncChartLabels(processChart, series.procCpu);
+        } catch (e) {
+          updateLiveStatus(false);
+        }
+      }
+
+      function updateLiveStatus(ok) {
+        const el = document.getElementById("live-status");
+        if (!el) return;
+        
+        if (ok) {
+          if (!somaticActive) {
+            somaticActive = true;
+            // Restore Green "Live" state
+            el.style.borderColor = "rgba(74,222,128,0.3)";
+            el.style.color = "var(--green)";
+            el.style.background = "rgba(74,222,128,0.1)";
+            el.querySelector(".live-dot").style.background = "var(--green)";
+            el.querySelector("span").textContent = "Live";
+          }
+        } else {
+          // Set Red "Inactive" state
+          somaticActive = false;
+          el.style.borderColor = "rgba(248,113,113,0.3)";
+          el.style.color = "var(--red)";
+          el.style.background = "rgba(248,113,113,0.1)";
+          el.querySelector(".live-dot").style.background = "var(--red)";
+          el.querySelector("span").textContent = "Somatic Inactive";
+        }
+      }
+
+      function updateClusterChips(clusters) {
+        const container = document.getElementById("cluster-chips");
+        if (!container) return;
+        const colors = {
+          "E-Cluster": "#38bdf8",
+          "P0-Cluster": "#818cf8",
+          "P1-Cluster": "#fb923c",
+        };
+        const labels = {
+          "E-Cluster": "Efficiency",
+          "P0-Cluster": "Perf-0",
+          "P1-Cluster": "Perf-1",
+        };
+        const html = Object.entries(clusters)
+          .map(([name, info]) => {
+            const active = Math.round((1 - (info.idle_ratio || 0)) * 100);
+            const down = Math.round((info.down_ratio || 0) * 100);
+            const freqGHz = ((info.freq_hz || 0) / 1e9).toFixed(2);
+            const col = colors[name] || "#94a3b8";
+            const state = down > 95 ? "💤 gated" : `${active}% active`;
+            return `<div class="cluster-chip" style="border-color:${col}40;">
+            <div class="chip-name" style="color:${col};">${labels[name] || name}</div>
+            <div class="chip-stat">Activity: <span class="chip-val">${state}</span></div>
+            <div class="chip-stat">Freq: <span class="chip-val">${freqGHz} GHz</span></div>
+            <div class="chip-stat">Cores: <span class="chip-val">${info.cpu_count || "?"}</span></div>
+        </div>`;
+          })
+          .join("");
+        container.innerHTML =
+          html || '<span style="color:var(--dim)">No cluster data</span>';
+      }
+
+      function setText(id, val) {
+        const el = document.getElementById(id);
+        if (el) el.textContent = val;
+      }
+
+      // ── Resolution Control ───────────────────────────────────────────────────
+      let _pollInterval = 500;
+      let _pollTimer = null;
+
+      function startPolling(ms) {
+        if (_pollTimer) clearInterval(_pollTimer);
+        _pollTimer = setInterval(pollSomatic, ms);
+      }
+
+      async function setResolution(ms) {
+        _pollInterval = parseInt(ms);
+        startPolling(_pollInterval);
+        // Also update backend sampler interval
+        try {
+          await fetch("/api/config", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ interval_ms: _pollInterval })
+          });
+        } catch(e) { /* ignore if backend not ready */ }
+      }
+
+      // ── Cognitive Measurement ────────────────────────────────────────────────
+      async function measureCognitive() {
+        const btn = document.getElementById("cog-btn");
+        const status = document.getElementById("cog-status");
+        btn.disabled = true;
+        btn.textContent = "⏳ Measuring…";
+        status.textContent = "Running streaming inference (llama3.2)…";
+        status.style.color = "var(--yellow)";
+        try {
+          const r = await fetch("/api/cognitive");
+          const d = await r.json();
+          if (d.error) throw new Error(d.error);
+          setText("cog-ttft",   d.ttft_ms != null ? d.ttft_ms.toFixed(0) : "—");
+          setText("cog-tps",    d.tps     != null ? d.tps.toFixed(1) + " tok/s" : "—");
+          setText("cog-energy", d.energy_per_token_mj != null ? d.energy_per_token_mj.toFixed(1) : "—");
+          status.textContent = "✅ Done";
+          status.style.color = "var(--green)";
+        } catch(e) {
+          status.textContent = "❌ " + e.message;
+          status.style.color = "var(--red)";
+        } finally {
+          btn.disabled = false;
+          btn.textContent = "▶ Measure (live inference)";
+        }
+      }
+
+      // Start polling at default 500ms
+      startPolling(_pollInterval);
+      pollSomatic();
+
+
+      // ── Static Model Analysis ────────────────────────────────────────────────────
+
+      // Load from cache (fast, no re-inference)
+      async function fetchStaticData() {
+        document.getElementById("static-loading").style.display = "flex";
+        document.getElementById("static-content").style.display = "none";
+        try {
+          const r = await fetch("/api/data");
+          const data = await r.json();
+          if (data.error) throw new Error(data.error);
+          renderStatic(data);
+        } catch (e) {
+          document.getElementById("static-loading").innerHTML =
+            `<div style="color:var(--red)">Error: ${e.message}</div>`;
+        } finally {
+          document.getElementById("static-loading").style.display = "none";
+          document.getElementById("static-content").style.display = "grid";
+        }
+      }
+
+      // Explicit re-run: triggers new model analysis (~20s)
+      async function refreshModelData() {
+        document.getElementById("static-content").style.display = "none";
+        document.getElementById("static-loading").style.display = "flex";
+        document.getElementById("static-loading").innerHTML =
+          '<div class="spinner"></div><div>Re-running model analysis… (~20s)</div>';
+        try {
+          const r = await fetch("/api/refresh");
+          const data = await r.json();
+          if (data.error) throw new Error(data.error);
+          renderStatic(data);
+        } catch (e) {
+          document.getElementById("static-loading").innerHTML =
+            `<div style="color:var(--red)">Refresh error: ${e.message}</div>`;
+        } finally {
+          document.getElementById("static-loading").style.display = "none";
+          document.getElementById("static-content").style.display = "grid";
+        }
+      }
+
+      function renderStatic(data) {
+        // 1. Spec
+        const spec = data.tech_spec || {};
+        const arch = spec.architecture || {};
+        document.getElementById("specs-content").innerHTML = `
+        ${row("Model", spec.model_name || "—")}
+        ${row("Architecture", arch.type || "Transformer", "Neural net topology")}
+        ${row("Runtime", spec.runtime || "—")}
+        ${row("Parameters", arch.Parameters || "3.2B")}
+        ${row("Context Window", arch["Context Window"] || "128k", "Max tokens in memory")}
+        ${row("Quantization", arch.Quantization || "Q4_K_M", "Compression level")}
+        <div style="height:10px;"></div>
+        ${row("Layers", arch.layer_count || arch["Layer Count"] || "?")}
+        ${row("Attn Heads", arch.attention_heads || arch["Attention Heads"] || "?")}
+        ${row("Capabilities", (spec.capabilities || ["Text"]).join(", "))}
+    `;
+
+        // 2. Metrics
+        const met = data.metrics || {};
+        const pe_tps =
+          met.prompt_eval_duration > 0
+            ? Math.round(
+                met.prompt_eval_count / (met.prompt_eval_duration / 1e9),
+              )
+            : 0;
+        document.getElementById("metrics-content").innerHTML = `
+        ${row("Thinking Speed", (met.tps || 0).toFixed(1) + " tok/s", "Tokens generated per second")}
+        ${row("Total Latency", ((met.eval_duration || 0) / 1e9).toFixed(2) + " s")}
+        ${row("Model Load", ((met.load_duration || 0) / 1e6).toFixed(0) + " ms")}
+        ${row("Context Used", (met.context_size || 0) + " slots", "KV Cache consumption")}
+        ${row("Prompt Speed", pe_tps + " tok/s", "Speed of reading input tokens")}
+        ${row("Tokens Out", met.eval_count || 0)}
+    `;
+
+        // 3. CoT
+        const cot = data.cot || {};
+        const badge = cot.passed
+          ? '<span class="badge badge-ok">✓ Verified</span>'
+          : '<span class="badge badge-warn">⚠️ Weak</span>';
+        document.getElementById("cot-content").innerHTML = `
+        ${row("Status", badge)}
+        ${row("Steps Found", (cot.steps_found || []).length)}
+        ${row("Duration", (cot.duration || 0).toFixed(2) + " s")}
+        <div style="margin-top:12px;font-size:0.72rem;color:var(--dim);margin-bottom:6px;">Response:</div>
+        <div class="code-block">${(cot.response_text || "").substring(0, 400)}${(cot.response_text || "").length > 400 ? "…" : ""}</div>
+    `;
+
+        // 4. Cognitive KPIs card (somatic section, top-level)
+        setText("kpi-tps",     (met.tps || 0).toFixed(1));
+        setText("kpi-ctx",     (met.context_size || 0).toString());
+        setText("kpi-latency", ((met.eval_duration || 0) / 1e9).toFixed(2) + " s");
+        setText("kpi-ptps",    pe_tps + " tok/s");
+        setText("kpi-load",    ((met.load_duration || 0) / 1e6).toFixed(0) + " ms");
+      }
+
+      function row(label, value, tip = "") {
+        const tipAttr = tip ? `data-tip="${tip}"` : "";
+        return `
+        <div class="stat-row">
+            <span class="stat-label" ${tipAttr}>${label}</span>
+            <span class="stat-value accent">${value}</span>
+        </div>`;
+      }
+
+      // Auto-load
+      fetchStaticData();
+
+      // ── Info Tooltip Overlay ───────────────────────────────────────────────────
+      (function () {
+        // Single floating tooltip rendered at body level — escapes all overflow clipping
+        const overlay = document.getElementById('info-tooltip');
+        let _openId = null;
+
+        function showTooltip(btn, id) {
+          const src = document.getElementById(id);
+          if (!src) return;
+
+          // Close if same button clicked again
+          if (_openId === id && overlay.classList.contains('visible')) {
+            hideTooltip();
+            return;
+          }
+
+          // Copy inner content into the overlay
+          overlay.innerHTML = src.innerHTML;
+          overlay.classList.add('visible');
+          _openId = id;
+
+          // Position: below the button, scrollport-aware (fixed coords)
+          const rect = btn.getBoundingClientRect();
+          const tw = 280;
+          let left = rect.left;
+          let top  = rect.bottom + 6;
+
+          // Prevent going off-screen right edge
+          if (left + tw > window.innerWidth - 12) {
+            left = window.innerWidth - tw - 12;
+          }
+          // Prevent going off-screen bottom — flip above button
+          if (top + overlay.offsetHeight > window.innerHeight - 12) {
+            top = rect.top - overlay.offsetHeight - 6;
+          }
+
+          overlay.style.left = left + 'px';
+          overlay.style.top  = top  + 'px';
+        }
+
+        function hideTooltip() {
+          overlay.classList.remove('visible');
+          _openId = null;
+        }
+
+        // Expose as global for onclick attributes
+        window.togglePop = function (btn, id) {
+          event.stopPropagation();
+          showTooltip(btn, id);
+        };
+
+        document.addEventListener('click', hideTooltip);
+        overlay.addEventListener('click', e => e.stopPropagation());
+      })();
+    </script>
+  </body>
+</html>

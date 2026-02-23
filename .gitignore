@@ -24,6 +24,8 @@ dist/
 # Documentation artifacts
 site/
 reference/
+toy_experiment
 
 # Experiments
-toy_experiment/
+# toy_experiment/
+.aider*
